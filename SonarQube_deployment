@@ -1,0 +1,17 @@
+#Sonarqube Deployment with Docker-Compose
+#========================================
+version: '3.8'
+
+services:
+  sonarqube:
+    image: smartcloud2022/sonarqube-report:v1 
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    volumes:
+      - /home/ubuntu/sonar/sonar_data:/opt/sonarqube/data
+      - /home/ubuntu/sonar/sonar_log:/opt/sonarqube/logs
+      - /home/ubuntu/sonar/sonar_extend:/opt/sonarqube/extensions
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=false
+    restart: unless-stopped
