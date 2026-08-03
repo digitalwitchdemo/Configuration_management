@@ -1,0 +1,67 @@
+#!/bin/bash
+set -e
+
+# chaning the hostname
+#=====================
+sudo hostnamectl set-hostname WebServer-`hostname -I`
+
+# Updating the server
+#=====================
+sudo apt update -y
+sudo apt upgrade -y
+
+# Installing Nginx (webservice)
+#==============================
+sudo apt install -y nginx
+
+# Starting / enabling the nginx service
+#=====================================
+sudo systemctl enable nginx
+sudo systemctl start nginx
+
+#clean up the default index in the nginx default path
+#====================================================
+sudo rm -rf /var/www/html/*
+
+# Install efs client dependencies 
+#================================
+sudo apt -y install nfs-common stunnel4 git binutils
+
+
+# To add the efs access point to the fstab
+#==========================================
+sudo tee -a /etc/fstab > /dev/null <<EOF
+fs-0830aab8df1548209.efs.us-east-2.amazonaws.com:/ /var/www/html nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0
+EOF
+
+# mount the efs
+#==================
+sudo mount -a
+
+# make nginx the owner of /var/www/html 
+#========================================
+sudo chown -R www-data:www-data /var/www/html
+
+# DAtadog Connection
+#======================
+DD_API_KEY=dd31303c0eba9e900d834666d3c2e08e \
+DD_APP_KEY=ddapp_ed8soGnbaOTkOfrF4FO43dfZGasr3eYBOv \
+DD_SITE="uk1.datadoghq.com" \
+DD_APM_INSTRUMENTATION_ENABLED=host \
+DD_APM_INSTRUMENTATION_LIBRARIES=java:1,python:4,js:5,php:1,dotnet:3,ruby:2,nginx:1 \
+DD_APPSEC_ENABLED=true \
+DD_RUNTIME_SECURITY_CONFIG_ENABLED=true \
+DD_COMPLIANCE_CONFIG_ENABLED=true \
+DD_SBOM_CONTAINER_IMAGE_ENABLED=true \
+DD_SBOM_HOST_ENABLED=true \
+DD_DATA_STREAMS_ENABLED=true \
+DD_PROFILING_ENABLED=auto \
+DD_OTELCOLLECTOR_ENABLED=true \
+DD_RUM_ENABLED=true \
+DD_RUM_APPLICATION_ID=d96fbd37-eb3b-437f-8ebe-8a8d13d9108e \
+DD_RUM_CLIENT_TOKEN=pubc45fd3324b0da1a8bdc69bcb244d7319 \
+DD_RUM_REMOTE_CONFIGURATION_ID=d6f35cb2-44ee-4142-b015-4e3b64b43f20 \
+DD_RUM_SITE=uk1.datadoghq.com \
+DD_PRIVATE_ACTION_RUNNER_ENABLED=true \
+DD_PRIVATE_ACTION_RUNNER_ACTIONS_ALLOWLIST=com.datadoghq.script.runPredefinedScript \
+bash -c "$(curl -L https://install.datadoghq.com/scripts/install_script_agent7.sh)"
