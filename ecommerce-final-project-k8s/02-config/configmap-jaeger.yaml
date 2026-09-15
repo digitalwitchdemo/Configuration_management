@@ -1,0 +1,27 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jaeger-config
+  namespace: otel-demo
+  labels:
+    app.kubernetes.io/name: jaeger-config
+    app.kubernetes.io/part-of: otel-demo
+data:
+  config.yml: "# Copyright The OpenTelemetry Authors\n# SPDX-License-Identifier: Apache-2.0\n\nservice:\n\
+    \  extensions: [jaeger_storage, jaeger_query, healthcheckv2]\n  pipelines:\n    traces:\n      receivers:\
+    \ [otlp]\n      processors: [batch]\n      exporters: [jaeger_storage_exporter]\n  telemetry:\n  \
+    \  resource:\n      service.name: jaeger\n    metrics:\n      level: detailed\n      readers:\n  \
+    \      - periodic:\n            interval: 10000\n            timeout: 5000\n            exporter:\n\
+    \              otlp:\n                protocol: http/protobuf\n                endpoint: http://${env:OTEL_COLLECTOR_HOST}:${env:OTEL_COLLECTOR_PORT_HTTP}\n\
+    \                insecure: true\n    logs:\n      level: info\nextensions:\n  healthcheckv2:\n   \
+    \ use_v2: true\n    http:\n      endpoint: 0.0.0.0:13133\n  jaeger_query:\n    storage:\n      traces:\
+    \ memory_backend\n      metrics: metrics_backend\n    base_path: /jaeger/ui\n    ui:\n      config_file:\
+    \ /etc/jaeger/ui-config.json\n  jaeger_storage:\n    backends:\n      memory_backend:\n        memory:\n\
+    \          max_traces: ${env:MEMORY_MAX_TRACES}\n    metric_backends:\n      metrics_backend:\n  \
+    \      prometheus:\n          endpoint: \"http://${env:PROMETHEUS_ADDR}\"\n          normalize_calls:\
+    \ true\n          normalize_duration: true\n\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n \
+    \       endpoint: ${env:JAEGER_HOST}:${env:JAEGER_GRPC_PORT}\n\nprocessors:\n  batch:\n\nexporters:\n\
+    \  jaeger_storage_exporter:\n    trace_storage: memory_backend\n"
+  ui-config.json: "{\n  \"useOpenTelemetryTerms\": true\n}\n"

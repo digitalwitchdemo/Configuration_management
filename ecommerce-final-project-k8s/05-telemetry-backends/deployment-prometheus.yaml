@@ -1,0 +1,80 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: otel-demo
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: otel-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: prometheus
+        app.kubernetes.io/part-of: otel-demo
+    spec:
+      containers:
+      - name: prometheus
+        image: quay.io/prometheus/prometheus:v3.13.1
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: 200M
+          requests:
+            memory: 200M
+        ports:
+        - containerPort: 9090
+          protocol: TCP
+        command:
+        - --web.console.templates=/etc/prometheus/consoles
+        - --web.console.libraries=/etc/prometheus/console_libraries
+        - --storage.tsdb.retention.time=7d
+        - --config.file=/etc/prometheus/prometheus-config.yaml
+        - --storage.tsdb.path=/prometheus
+        - --web.enable-lifecycle
+        - --web.route-prefix=/
+        - --web.enable-otlp-receiver
+        - --enable-feature=exemplar-storage
+        volumeMounts:
+        - name: config
+          mountPath: /etc/prometheus
+        - name: data
+          mountPath: /prometheus
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+      volumes:
+      - name: config
+        configMap:
+          name: prometheus-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: prometheus-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: otel-demo
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: otel-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: prometheus
+  ports:
+  - name: http
+    port: 9090
+    targetPort: 9090

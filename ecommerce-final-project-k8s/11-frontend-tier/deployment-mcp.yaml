@@ -1,0 +1,76 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp
+  namespace: otel-demo
+  labels:
+    app.kubernetes.io/name: mcp
+    app.kubernetes.io/part-of: otel-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mcp
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mcp
+        app.kubernetes.io/part-of: otel-demo
+    spec:
+      containers:
+      - name: mcp
+        image: <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/ecomerce/mcp:latest
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: 500M
+          requests:
+            memory: 500M
+        ports:
+        - containerPort: 8011
+          protocol: TCP
+        env:
+        - name: OTEL_EXPORTER_OTLP_INSECURE
+          value: 'true'
+        - name: OTEL_PYTHON_SDK_INTERNAL_METRICS_ENABLED
+          value: 'true'
+        - name: OTEL_SERVICE_NAME
+          value: mcp
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: service.namespace=$(OTEL_SERVICE_NAMESPACE),service.version=$(IMAGE_VERSION),service.criticality=low
+        envFrom:
+        - configMapRef:
+            name: common-config
+        readinessProbe:
+          tcpSocket:
+            port: 8011
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+      initContainers:
+      - name: wait-for-deps
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - until nc -z -w2 frontend 8080; do echo "waiting for frontend:8080"; sleep 2; done
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp
+  namespace: otel-demo
+  labels:
+    app.kubernetes.io/name: mcp
+    app.kubernetes.io/part-of: otel-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: mcp
+  ports:
+  - name: http
+    port: 8011
+    targetPort: 8011

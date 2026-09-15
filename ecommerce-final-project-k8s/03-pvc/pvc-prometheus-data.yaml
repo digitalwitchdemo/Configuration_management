@@ -1,0 +1,17 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data
+  namespace: otel-demo
+  labels:
+    app.kubernetes.io/name: prometheus-data
+    app.kubernetes.io/part-of: otel-demo
+spec:
+  storageClassName: otel-demo-gp3
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
