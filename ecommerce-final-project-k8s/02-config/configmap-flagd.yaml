@@ -1,0 +1,58 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flagd-config
+  namespace: otel-demo
+  labels:
+    app.kubernetes.io/name: flagd-config
+    app.kubernetes.io/part-of: otel-demo
+data:
+  demo.flagd.json: "{\n  \"$schema\": \"https://flagd.dev/schema/v0/flags.json\",\n  \"flags\": {\n  \
+    \  \"adFailure\": {\n      \"defaultVariant\": \"off\",\n      \"description\": \"Fail ad service\"\
+    ,\n      \"state\": \"ENABLED\",\n      \"variants\": {\n        \"off\": false,\n        \"on\":\
+    \ true\n      }\n    },\n    \"adHighCpu\": {\n      \"defaultVariant\": \"off\",\n      \"description\"\
+    : \"Triggers high cpu load in the ad service\",\n      \"state\": \"ENABLED\",\n      \"variants\"\
+    : {\n        \"off\": false,\n        \"on\": true\n      }\n    },\n    \"adManualGc\": {\n     \
+    \ \"defaultVariant\": \"off\",\n      \"description\": \"Triggers full manual garbage collections\
+    \ in the ad service\",\n      \"state\": \"ENABLED\",\n      \"variants\": {\n        \"off\": false,\n\
+    \        \"on\": true\n      }\n    },\n    \"cartFailure\": {\n      \"defaultVariant\": \"off\"\
+    ,\n      \"description\": \"Fail cart service n% of the time\",\n      \"state\": \"ENABLED\",\n \
+    \     \"variants\": {\n        \"10%\": 0.1,\n        \"100%\": 1,\n        \"25%\": 0.25,\n     \
+    \   \"50%\": 0.5,\n        \"75%\": 0.75,\n        \"90%\": 0.9,\n        \"off\": 0\n      }\n  \
+    \  },\n    \"emailMemoryLeak\": {\n      \"defaultVariant\": \"off\",\n      \"description\": \"Memory\
+    \ leak in the email service.\",\n      \"state\": \"ENABLED\",\n      \"variants\": {\n        \"\
+    10000x\": 10000,\n        \"1000x\": 1000,\n        \"100x\": 100,\n        \"10x\": 10,\n       \
+    \ \"1x\": 1,\n        \"off\": 0\n      }\n    },\n    \"failedReadinessProbe\": {\n      \"defaultVariant\"\
+    : \"off\",\n      \"description\": \"readiness probe failure for cart service\",\n      \"state\"\
+    : \"ENABLED\",\n      \"variants\": {\n        \"off\": false,\n        \"on\": true\n      }\n  \
+    \  },\n    \"imageSlowLoad\": {\n      \"defaultVariant\": \"off\",\n      \"description\": \"slow\
+    \ loading images in the frontend\",\n      \"state\": \"ENABLED\",\n      \"variants\": {\n      \
+    \  \"10sec\": 10000,\n        \"5sec\": 5000,\n        \"off\": 0\n      }\n    },\n    \"intlShippingSlowdown\"\
+    : {\n      \"defaultVariant\": \"off\",\n      \"description\": \"Delays international shipping responses\
+    \ to simulate overseas shipping delay\",\n      \"state\": \"ENABLED\",\n      \"variants\": {\n \
+    \       \"10sec\": 10,\n        \"5sec\": 5,\n        \"off\": 0\n      }\n    },\n    \"kafkaQueueProblems\"\
+    : {\n      \"defaultVariant\": \"off\",\n      \"description\": \"Overloads Kafka queue while simultaneously\
+    \ introducing a consumer side delay leading to a lag spike\",\n      \"state\": \"ENABLED\",\n   \
+    \   \"variants\": {\n        \"off\": 0,\n        \"on\": 100\n      }\n    },\n    \"loadGeneratorFloodHomepage\"\
+    : {\n      \"defaultVariant\": \"off\",\n      \"description\": \"Flood the frontend with a large\
+    \ amount of requests.\",\n      \"state\": \"ENABLED\",\n      \"variants\": {\n        \"off\": 0,\n\
+    \        \"on\": 100\n      }\n    },\n    \"paymentFailure\": {\n      \"defaultVariant\": \"off\"\
+    ,\n      \"description\": \"Fail payment service charge requests n%\",\n      \"state\": \"ENABLED\"\
+    ,\n      \"variants\": {\n        \"10%\": 0.1,\n        \"100%\": 1,\n        \"25%\": 0.25,\n  \
+    \      \"50%\": 0.5,\n        \"75%\": 0.75,\n        \"90%\": 0.95,\n        \"off\": 0\n      }\n\
+    \    },\n    \"paymentUnreachable\": {\n      \"defaultVariant\": \"off\",\n      \"description\"\
+    : \"Payment service is unavailable\",\n      \"state\": \"ENABLED\",\n      \"variants\": {\n    \
+    \    \"off\": false,\n        \"on\": true\n      }\n    },\n    \"productCatalogFailure\": {\n  \
+    \    \"defaultVariant\": \"off\",\n      \"description\": \"Fail product catalog service on a specific\
+    \ product\",\n      \"state\": \"ENABLED\",\n      \"targeting\": {\n        \"if\": [\n         \
+    \ {\n            \"==\": [\n              {\n                \"var\": \"product_id\"\n           \
+    \   },\n              \"OLJCESPC7Z\"\n            ]\n          },\n          \"off\",\n          \"\
+    off\"\n        ]\n      },\n      \"variants\": {\n        \"off\": false,\n        \"on\": true\n\
+    \      }\n    },\n    \"productCatalogLockContention\": {\n      \"defaultVariant\": \"off\",\n  \
+    \    \"description\": \"Trigger lock contention on the product catalog database\",\n      \"state\"\
+    : \"ENABLED\",\n      \"variants\": {\n        \"off\": false,\n        \"on\": true\n      }\n  \
+    \  },\n    \"recommendationCacheFailure\": {\n      \"defaultVariant\": \"off\",\n      \"description\"\
+    : \"Fail recommendation service cache\",\n      \"state\": \"ENABLED\",\n      \"variants\": {\n \
+    \       \"off\": false,\n        \"on\": true\n      }\n    }\n  }\n}\n"
