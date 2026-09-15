@@ -1,0 +1,201 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: digitalwitch-market
+  labels:
+    app.kubernetes.io/name: otel-collector-config
+    app.kubernetes.io/part-of: digitalwitch-market
+data:
+  otelcol-config.yml: "# Copyright The OpenTelemetry Authors\n# SPDX-License-Identifier: Apache-2.0\n\n\
+    # Base collector configuration: receivers, processors, and pipelines.\n# Exports only to the debug\
+    \ exporter by default.\n# Layer additional configs on top with --config to add exporters:\n#   otelcol-config-full.yml\
+    \        adds Kafka and PostgreSQL metric receivers\n#   otelcol-config-observability.yml  adds observability\
+    \ exporters and OpAMP status reporting\n#   otelcol-config-extras.yml      extras/customizations (empty\
+    \ stub)\n\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: ${env:OTEL_COLLECTOR_HOST}:${env:OTEL_COLLECTOR_PORT_GRPC}\n\
+    \      http:\n        endpoint: ${env:OTEL_COLLECTOR_HOST}:${env:OTEL_COLLECTOR_PORT_HTTP}\n     \
+    \   cors:\n          allowed_origins:\n            - \"http://*\"\n            - \"https://*\"\n \
+    \         allowed_headers:\n            - \"content-type\"\n            - \"traceparent\"\n      \
+    \      - \"baggage\"\n  http_check/frontend-proxy:\n    targets:\n      - endpoint: http://${env:FRONTEND_PROXY_ADDR}\n\
+    \  nginx:\n    endpoint: http://${env:IMAGE_PROVIDER_HOST}:${env:IMAGE_PROVIDER_PORT}/status\n   \
+    \ collection_interval: 10s\n  docker_stats:\n    endpoint: unix:///var/run/docker.sock\n    metrics:\n\
+    \      container.blockio.io_serviced_recursive:\n        enabled: true\n      container.cpu.usage.system:\n\
+    \        enabled: true\n      container.memory.hierarchical_memory_limit:\n        enabled: true\n\
+    \      container.memory.rss:\n        enabled: true\n      container.network.io.usage.rx_packets:\n\
+    \        enabled: true\n      container.network.io.usage.tx_packets:\n        enabled: true\n    \
+    \  container.uptime:\n        enabled: true\n  redis:\n    endpoint: \"valkey-cart:6379\"\n    username:\
+    \ \"valkey\"\n    collection_interval: 10s\n  postgresql:\n    endpoint: ${POSTGRES_HOST}:${POSTGRES_PORT}\n\
+    \    username: monitoring_user\n    password: ${env:POSTGRES_MONITORING_PASSWORD}\n    metrics:\n\
+    \      postgresql.blks_hit:\n        enabled: true\n      postgresql.blks_read:\n        enabled:\
+    \ true\n      postgresql.tup_fetched:\n        enabled: true\n      postgresql.tup_returned:\n   \
+    \     enabled: true\n      postgresql.tup_inserted:\n        enabled: true\n      postgresql.tup_updated:\n\
+    \        enabled: true\n      postgresql.tup_deleted:\n        enabled: true\n      postgresql.deadlocks:\n\
+    \        enabled: true\n    tls:\n      insecure: true\n  # Scrape a Prometheus `/metrics` endpoint\
+    \ exposed by the ad service.\n  # See: https://opentelemetry.io/docs/demo/services/ad/#bridging-non-otel-custom-metrics-prometheus-client-library\n\
+    \  prometheus/ad:\n    config:\n      scrape_configs:\n        - job_name: ad\n          scrape_interval:\
+    \ 10s\n          static_configs:\n            - targets: [\"ad:${env:AD_PROMETHEUS_PORT}\"]\n  # Host\
+    \ metrics\n  host_metrics:\n    root_path: /hostfs\n    scrapers:\n      cpu:\n        metrics:\n\
+    \          system.cpu.utilization:\n            enabled: true\n      disk:\n      load:\n      filesystem:\n\
+    \        exclude_mount_points:\n          mount_points:\n            - /dev/*\n            - /proc/*\n\
+    \            - /sys/*\n            - /run/k3s/containerd/*\n            - /var/lib/docker/*\n    \
+    \        - /var/lib/kubelet/*\n            - /snap/*\n          match_type: regexp\n        exclude_fs_types:\n\
+    \          fs_types:\n            - autofs\n            - binfmt_misc\n            - bpf\n       \
+    \     - cgroup2\n            - configfs\n            - debugfs\n            - devpts\n           \
+    \ - devtmpfs\n            - fusectl\n            - hugetlbfs\n            - iso9660\n            -\
+    \ mqueue\n            - nsfs\n            - overlay\n            - proc\n            - procfs\n  \
+    \          - pstore\n            - rpc_pipefs\n            - securityfs\n            - selinuxfs\n\
+    \            - squashfs\n            - sysfs\n            - tracefs\n          match_type: strict\n\
+    \      memory:\n        metrics:\n          system.memory.utilization:\n            enabled: true\n\
+    \          system.memory.limit:\n            enabled: true\n      network:\n      paging:\n      \
+    \  metrics:\n          system.paging.utilization:\n            enabled: true\n      processes:\n \
+    \     process:\n        mute_process_exe_error: true\n        mute_process_io_error: true\n      \
+    \  mute_process_user_error: true\n      system:\n\nexporters:\n  debug:\n\nprocessors:\n  memory_limiter:\n\
+    \    check_interval: 5s\n    limit_percentage: 80\n    spike_limit_percentage: 25\n  resource_detection:\n\
+    \    detectors: [env, docker, system]\n    system:\n      hostname_sources: [\"os\"]\n      resource_attributes:\n\
+    \        host.arch:\n          enabled: true\n        host.cpu.vendor.id:\n          enabled: true\n\
+    \        host.cpu.family:\n          enabled: true\n        host.cpu.model.id:\n          enabled:\
+    \ true\n        host.cpu.model.name:\n          enabled: true\n        host.cpu.stepping:\n      \
+    \    enabled: true\n        host.cpu.cache.l2.size:\n          enabled: true\n        os.description:\n\
+    \          enabled: true\n  filter/sanitize_profiles:\n    error_mode: ignore\n    profiles:\n   \
+    \   profile:\n        - 'IsMatch(resource.attributes[\"service.name\"], \"containerd-shim-.*\")'\n\
+    \n  transform/sanitize_logs:\n    error_mode: ignore\n    log_statements:\n      - context: scope\n\
+    \        statements:\n          # Rename flat \"otelcol.signal\" scope attribute to prevent mapping\n\
+    \          # conflict with the dotted \"otelcol.signal.output\" attribute.\n          # Upstream Issue:\
+    \ https://github.com/open-telemetry/opentelemetry-collector/issues/15221\n          - set(attributes[\"\
+    otelcol_signal\"], attributes[\"otelcol.signal\"]) where attributes[\"otelcol.signal\"] != nil and\
+    \ not IsMap(attributes[\"otelcol.signal\"])\n          - delete_key(attributes, \"otelcol.signal\"\
+    ) where attributes[\"otelcol_signal\"] != nil\n  gen_ai_normalizer:\n    sources:\n      - name: openllmetry\n\
+    \n  transform/sanitize_spans:\n    error_mode: ignore\n    trace_statements:\n      - context: span\n\
+    \        statements:\n          - set_semconv_span_name(\"1.43.0\", \"original_span_name\")\n\n  #\
+    \ Demo: redact sensitive attributes before export. Collector-side redaction is\n  # a fallback --\
+    \ prefer not collecting sensitive data in the first place.\n  #\n  # An alternative is the purpose-built\
+    \ redaction processor (commented out below).\n  # It is fail-closed: with allow_all_keys=false it\
+    \ drops every attribute not in\n  # allowed_keys, which would strip attributes across this shared\
+    \ gateway pipeline.\n  # To try it, uncomment, set REDACTION_HMAC_KEY, and add `redaction` to the\n\
+    \  # traces pipeline processors below.\n  # redaction:\n  #   allow_all_keys: true\n  #   # Hash values\
+    \ matching a credit card number (13-16 digits, optional\n  #   # dashes/spaces) instead of exporting\
+    \ them in the clear.\n  #   blocked_values:\n  #     - \"\\\\d{4}[- ]?\\\\d{4}[- ]?\\\\d{4}[- ]?\\\
+    \\d{1,4}\"\n  #   hash_function: hmac-sha256\n  #   hmac_key: ${env:REDACTION_HMAC_KEY}\n  #   summary:\
+    \ debug\n  transform/redact_sensitive_data:\n    error_mode: ignore\n    trace_statements:\n     \
+    \ - context: span\n        statements:\n          - delete_key(attributes, \"demo.payment.card_cvv\"\
+    ) where attributes[\"demo.payment.card_cvv\"] != nil\n          - set(attributes[\"user.hash\"], SHA256(attributes[\"\
+    user.email\"])) where attributes[\"user.email\"] != nil\n          - delete_key(attributes, \"user.email\"\
+    ) where attributes[\"user.email\"] != nil\n          # Keep only the last four digits, e.g. 4432-8015-6152-0454\
+    \ -> ****-****-****-0454\n          - replace_pattern(attributes[\"demo.payment.card_number\"], \"\
+    ^\\\\d{4}-\\\\d{4}-\\\\d{4}-\", \"****-****-****-\") where attributes[\"demo.payment.card_number\"\
+    ] != nil\n\nconnectors:\n  span_metrics:\n\nservice:\n  pipelines:\n    traces:\n      receivers:\
+    \ [otlp]\n      processors: [resource_detection, memory_limiter, transform/sanitize_spans, gen_ai_normalizer,\
+    \ transform/redact_sensitive_data]\n      exporters: [debug, span_metrics]\n    metrics:\n      receivers:\
+    \ [docker_stats, http_check/frontend-proxy, host_metrics, nginx, otlp, redis, postgresql, prometheus/ad,\
+    \ span_metrics]\n      processors: [resource_detection, memory_limiter]\n      exporters: [debug]\n\
+    \    logs:\n      receivers: [otlp]\n      processors: [resource_detection, memory_limiter, transform/sanitize_logs]\n\
+    \      exporters: [debug]\n    profiles:\n      receivers: [otlp]\n      processors: [resource_detection,\
+    \ filter/sanitize_profiles, memory_limiter]\n      exporters: [debug]\n  telemetry:\n    metrics:\n\
+    \      readers:\n        - periodic:\n            exporter:\n              otlp:\n               \
+    \ protocol: http/protobuf\n                # replace with your observability meta monitoring backend\n\
+    \                endpoint: http://${env:OTEL_COLLECTOR_HOST}:${env:OTEL_COLLECTOR_PORT_HTTP}\n   \
+    \ logs:\n      processors:\n        - batch:\n            exporter:\n              otlp:\n       \
+    \         protocol: http/protobuf\n                # replace with your observability meta monitoring\
+    \ backend\n                endpoint: http://${env:OTEL_COLLECTOR_HOST}:${env:OTEL_COLLECTOR_PORT_HTTP}\n"
+  otelcol-config-full.yml: "# Copyright The OpenTelemetry Authors\n# SPDX-License-Identifier: Apache-2.0\n\
+    \n# Full demo collector additions: Kafka and PostgreSQL metric receivers.\n# Loaded when running with\
+    \ compose.full.yaml.\n#\n# IMPORTANT: The OTel Collector merges config files but REPLACES arrays,\
+    \ not appends.\n# The metrics pipeline below must repeat all receivers from otelcol-config.yml.\n\n\
+    receivers:\n  kafkametrics:\n    scrapers:\n      - brokers\n      - topics\n      - consumers\n \
+    \   brokers:\n      - ${KAFKA_ADDR}\n    collection_interval: 10s\n\nservice:\n  pipelines:\n    metrics:\n\
+    \      receivers: [docker_stats, http_check/frontend-proxy, host_metrics, nginx, otlp, redis, postgresql,\
+    \ span_metrics, kafkametrics]\n"
+  otelcol-config-observability.yml: "# Copyright The OpenTelemetry Authors\n# SPDX-License-Identifier:\
+    \ Apache-2.0\n\n# Observability stack collector additions: Jaeger, Prometheus, and OpenSearch exporters,\n\
+    # and OpAMP status reporting.\n# Loaded when running with compose.observability.yaml.\n#\n# IMPORTANT:\
+    \ The OTel Collector merges config files but REPLACES arrays, not appends.\n# The pipeline exporters\
+    \ below must repeat all exporters from earlier config layers\n# (e.g. debug, spanmetrics) to keep\
+    \ them active alongside the observability exporters.\n#\n# Exporter name reference (these are the\
+    \ stable names forks should reference):\n#   traces:  otlp_grpc/jaeger\n#   metrics: otlp_http/prometheus\n\
+    #   logs:    opensearch\n#\n# If you are running with compose.full.yaml, also repeat the full receivers\
+    \ in metrics.\n\nexporters:\n  otlp_grpc/jaeger:\n    endpoint: \"jaeger:4317\"\n    tls:\n      insecure:\
+    \ true\n    sending_queue:\n      batch:\n  otlp_http/prometheus:\n    endpoint: \"http://prometheus:9090/api/v1/otlp\"\
+    \n    tls:\n      insecure: true\n    sending_queue:\n      batch:\n  opensearch:\n    logs_index:\
+    \ otel-logs\n    logs_index_time_format: \"yyyy-MM-dd\"\n    http:\n      endpoint: \"http://opensearch:9200\"\
+    \n      tls:\n        insecure: true\n    sending_queue:\n      batch:\n  otlp_grpc/firepit:\n   \
+    \ endpoint: \"firepit:4317\"\n    tls:\n      insecure: true\n\nextensions:\n  opamp:\n    server:\n\
+    \      ws:\n        endpoint: wss://opamp-server:4320/v1/opamp\n        tls:\n          insecure_skip_verify:\
+    \ true\n    instance_uid: 00000000-0000-7000-8000-000000000001\n    capabilities:\n      reports_effective_config:\
+    \ true\n      reports_health: true\n      reports_available_components: true\n    agent_description:\n\
+    \      include_resource_attributes: true\n      non_identifying_attributes:\n        deployment.environment.name:\
+    \ demo\n        demo.collector.role: gateway\n\nservice:\n  extensions: [opamp]\n  pipelines:\n  \
+    \  traces:\n      exporters: [debug, otlp_grpc/jaeger, span_metrics]\n    metrics:\n      exporters:\
+    \ [debug, otlp_http/prometheus]\n    logs:\n      exporters: [debug, opensearch]\n    profiles:\n\
+    \      exporters: [debug, otlp_grpc/firepit]\n"
+  otelcol-config-extras.yml: '# Copyright The OpenTelemetry Authors
+
+    # SPDX-License-Identifier: Apache-2.0
+
+
+    # Extras/customization layer for the OTel Collector.
+
+    # Override this file in your fork to add exporters for your own observability backend.
+
+    #
+
+    # This file is intentionally empty. It is always loaded last, giving forks
+
+    # a stable, well-defined seam to customize without touching upstream files.
+
+    #
+
+    # IMPORTANT: The OTel Collector merges config files but REPLACES arrays, not appends.
+
+    # If you want to keep the default observability stack alongside your own exporters,
+
+    # you must explicitly repeat the upstream exporter names in your pipeline definitions.
+
+    #
+
+    # Upstream exporter names (repeat these to keep them active):
+
+    #   traces:  otlp_grpc/jaeger, debug, span_metrics
+
+    #   metrics: otlp_http/prometheus, debug
+
+    #   logs:    opensearch, debug
+
+    #
+
+    # Example:
+
+    #
+
+    # exporters:
+
+    #   otlp_grpc/mybackend:
+
+    #     endpoint: https://ingest.mybackend.com
+
+    #
+
+    # service:
+
+    #   pipelines:
+
+    #     traces:
+
+    #       exporters: [otlp_grpc/jaeger, debug, span_metrics, otlp_grpc/mybackend]  # repeat upstream
+    exporters
+
+    #     metrics:
+
+    #       receivers: [docker_stats, http_check/frontend-proxy, host_metrics, nginx, otlp, redis, span_metrics]
+
+    #       exporters: [otlp_http/prometheus, debug, otlp_grpc/mybackend]           # repeat upstream
+    exporters
+
+    #     logs:
+
+    #       exporters: [opensearch, debug, otlp_grpc/mybackend]                     # repeat upstream
+    exporters
+
+    '

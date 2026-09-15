@@ -1,0 +1,18 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data
+  namespace: digitalwitch-market
+  labels:
+    app.kubernetes.io/name: grafana-data
+    app.kubernetes.io/part-of: digitalwitch-market
+spec:
+  storageClassName: digitalwitch-market-gp3
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi

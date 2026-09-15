@@ -1,0 +1,36 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+# OPTIONAL / NOT applied by deploy-all.sh by default.
+#
+# The rest of this module uses dynamic provisioning: a PersistentVolumeClaim
+# referencing the digitalwitch-market-gp3 StorageClass causes Kubernetes and
+# the EBS CSI driver to create the PersistentVolume automatically.
+#
+# This file shows the alternative - STATIC provisioning - for when you want
+# Postgres bound to one specific, pre-existing EBS volume (e.g. one restored
+# from a snapshot) instead of a fresh empty one. Fill in a real volumeHandle
+# (the EBS volume ID) below, then to use it instead of dynamic provisioning:
+#   1. kubectl apply -f 01-foundation/pv-postgres-static-example.yaml
+#   2. In 03-databases/pvc-postgres-data.yaml, set storageClassName: ""
+#      and add volumeName: postgres-data-static, so the PVC binds to this
+#      PV instead of provisioning a new one.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: postgres-data-static
+  labels:
+    app.kubernetes.io/name: astronomy-db
+    app.kubernetes.io/part-of: digitalwitch-market
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ''
+  csi:
+    driver: ebs.csi.aws.com
+    fsType: ext4
+    volumeHandle: vol-REPLACE_WITH_REAL_EBS_VOLUME_ID
