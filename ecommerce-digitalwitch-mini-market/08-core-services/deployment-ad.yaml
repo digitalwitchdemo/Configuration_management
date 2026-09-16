@@ -1,0 +1,83 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ad
+  namespace: digitalwitch-market
+  labels:
+    app.kubernetes.io/name: ad
+    app.kubernetes.io/part-of: digitalwitch-market
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ad
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ad
+        app.kubernetes.io/part-of: digitalwitch-market
+    spec:
+      containers:
+      - name: ad
+        image: <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/ecomerce/ad:latest
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: 300M
+          requests:
+            memory: 300M
+        ports:
+        - containerPort: 9555
+          protocol: TCP
+        - containerPort: 9465
+          protocol: TCP
+        env:
+        - name: AD_PORT
+          value: '9555'
+        - name: AD_PROMETHEUS_PORT
+          value: '9465'
+        - name: OTEL_SERVICE_NAME
+          value: ad
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: service.namespace=$(OTEL_SERVICE_NAMESPACE),service.version=$(IMAGE_VERSION),service.criticality=medium
+        envFrom:
+        - configMapRef:
+            name: common-config
+        readinessProbe:
+          tcpSocket:
+            port: 9555
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+      initContainers:
+      - name: wait-for-deps
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - until nc -z -w2 otel-collector 4317; do echo "waiting for otel-collector:4317"; sleep 2; done
+          && until nc -z -w2 flagd 8013; do echo "waiting for flagd:8013"; sleep 2; done
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ad
+  namespace: digitalwitch-market
+  labels:
+    app.kubernetes.io/name: ad
+    app.kubernetes.io/part-of: digitalwitch-market
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: ad
+  ports:
+  - name: grpc
+    port: 9555
+    targetPort: 9555
+  - name: prometheus
+    port: 9465
+    targetPort: 9465

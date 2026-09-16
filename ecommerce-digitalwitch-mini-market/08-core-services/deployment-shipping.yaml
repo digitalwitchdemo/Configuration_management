@@ -1,0 +1,86 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shipping
+  namespace: digitalwitch-market
+  labels:
+    app.kubernetes.io/name: shipping
+    app.kubernetes.io/part-of: digitalwitch-market
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: shipping
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: shipping
+        app.kubernetes.io/part-of: digitalwitch-market
+    spec:
+      containers:
+      - name: shipping
+        image: <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/ecomerce/shipping:latest
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: 20M
+          requests:
+            memory: 20M
+        ports:
+        - containerPort: 50050
+          protocol: TCP
+        env:
+        - name: SHIPPING_PORT
+          value: '50050'
+        - name: OTEL_EXPORTER_OTLP_PROTOCOL
+          value: http/protobuf
+        - name: OTEL_SERVICE_NAME
+          value: shipping
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: service.namespace=$(OTEL_SERVICE_NAMESPACE),service.version=$(IMAGE_VERSION),service.criticality=high
+        envFrom:
+        - configMapRef:
+            name: common-config
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        readinessProbe:
+          tcpSocket:
+            port: 50050
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+        securityContext:
+          readOnlyRootFilesystem: true
+      initContainers:
+      - name: wait-for-deps
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - until nc -z -w2 otel-collector 4317; do echo "waiting for otel-collector:4317"; sleep 2; done
+          && until nc -z -w2 flagd 8013; do echo "waiting for flagd:8013"; sleep 2; done
+      volumes:
+      - name: tmp
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shipping
+  namespace: digitalwitch-market
+  labels:
+    app.kubernetes.io/name: shipping
+    app.kubernetes.io/part-of: digitalwitch-market
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: shipping
+  ports:
+  - name: grpc
+    port: 50050
+    targetPort: 50050
