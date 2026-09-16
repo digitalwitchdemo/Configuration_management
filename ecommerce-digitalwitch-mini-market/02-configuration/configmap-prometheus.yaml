@@ -1,0 +1,30 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: digitalwitch-market
+  labels:
+    app.kubernetes.io/name: prometheus-config
+    app.kubernetes.io/part-of: digitalwitch-market
+data:
+  prometheus-config.yaml: "# Copyright The OpenTelemetry Authors\n# SPDX-License-Identifier: Apache-2.0\n\
+    \nglobal:\n  # Align Prometheus scrape interval with the OTel SDKs' export interval for consistency\
+    \ (see OTEL_METRIC_EXPORT_INTERVAL)\n  scrape_interval: 60s\n\notlp:\n  keep_identifying_resource_attributes:\
+    \ true\n  promote_resource_attributes:\n    - service.instance.id\n    - service.name\n    - service.namespace\n\
+    \    - service.version\n    - service.criticality\n    - cloud.availability_zone\n    - cloud.region\n\
+    \    - deployment.environment.name\n\n    # When deploying on Kubernetes, resource attributes used\
+    \ to identify the\n    # kubernetes resources in dashboards and alerts.\n    - k8s.cluster.name\n\
+    \    - k8s.container.name\n    - k8s.cronjob.name\n    - k8s.daemonset.name\n    - k8s.deployment.name\n\
+    \    - k8s.job.name\n    - k8s.namespace.name\n    - k8s.node.name\n    - k8s.pod.name\n    - k8s.replicaset.name\n\
+    \    - k8s.statefulset.name\n    - container.name\n\n    # When deploying on VMs, resource attributes\
+    \ used to identify\n    # the host in dashboards and alerts.\n    - host.name\n\n    # PostgreSQL\
+    \ resource attributes produced by the OTel Collector PostgreSQL receiver\n    # and used in dashboards\
+    \ and alerts.\n    # See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/metadata.yaml\n\
+    \    - postgresql.database.name\n    - postgresql.schema.name\n    - postgresql.table.name\n    -\
+    \ postgresql.index.name\n\n    # Kafka resource attributes produced by the OTel Collector Kafka receiver\n\
+    \    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/kafkametricsreceiver\n\
+    \    - kafka.cluster.alias\n\n    # See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.142.0/connector/spanmetricsconnector/README.md#known-limitation-the-single-writer-principle\n\
+    \    - collector.instance.id\nstorage:\n  tsdb:\n    out_of_order_time_window: 30m\n"

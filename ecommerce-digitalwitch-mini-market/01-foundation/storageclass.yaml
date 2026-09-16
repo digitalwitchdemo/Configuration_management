@@ -1,0 +1,17 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: digitalwitch-market-gp3
+  labels:
+    app.kubernetes.io/name: digitalwitch-market-gp3
+    app.kubernetes.io/part-of: digitalwitch-market
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  encrypted: 'true'
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
