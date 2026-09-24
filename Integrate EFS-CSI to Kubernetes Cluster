@@ -1,0 +1,133 @@
+1. Create the EFS filesystem in AWS
+
+2. Give the EFS CSI driver the required AWS credentials using a Kubernetes Secret.
+---------------------------------------------------------------------------------
+ 2.1 Create an AWS IAM user for the EFS CSI driver
+  2.2 assign this permission "AmazonElasticFileSystemFullAccess" to the user
+  2.3 Create an access key (IAM → Users → k3s-efs-csi → Security credentials)
+  2.4 Create the Kubernetes Secret
+      kubectl create secret generic aws-efs-credentials -n kube-system \
+    --from-literal=key_id='AKIA1234567xxxx' \
+    --from-literal=access_key='xxxxxxxxxxxxxxxx'
+
+3) Test EFS connectivity BEFORE Kubernetes integration
+-------------------------------------------------------
+   3.1  create a director 
+        mkdir kubefile 
+   3.2. mount it now with efs url 
+   sudo tee -a /etc/fstab > /dev/null <<EOF
+fs-056cced4522b8b845.efs.us-east-2.amazonaws.com:/ /home/ubuntu/Kubefile nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0
+EOF
+   3.3 mount complete
+   ------------------
+    sudo mount -a
+   3.4. Confirm it 
+   ---------------
+        df -h
+
+
+4) Use HELM to Install the EFS CSI driver to kubernetes cluster
+---------------------------------------------------------------
+   4.1 open powershell as an admin and run choco install kubernetes-helm
+   4.2 open gitbash and export your kubeconfig file to environmental variable. 
+       export KUBECONFIG="/c/Users/smart/Documents/Cluster_keys/New_singleCluster.yaml"
+       or use poershell 
+       $env:KUBECONFIG="C:\Users\smart\Documents\Cluster_keys\New_singleCluster.yaml"
+
+    4.3 Add EFS-CSI driver.
+    ------------------------
+        helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver/
+        
+        helm repo update
+    4.4 Create a values.yaml file and add this content in it
+    --------------------------------------------------------
+    notepad values.yaml 
+    " controller:
+  env:
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: aws-efs-credentials
+          key: key_id
+
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: aws-efs-credentials
+          key: access_key
+
+storageClasses:
+  - name: efs-dynamic
+    parameters:
+      provisioningMode: efs-ap
+      fileSystemId: fs-056cced4522b8b845
+      directoryPerms: "700"
+      gidRangeStart: "1000"
+      gidRangeEnd: "2000"
+      basePath: "/dynamic_provisioning"
+      ensureUniqueDirectory: "true"
+    reclaimPolicy: Delete
+    volumeBindingMode: Immediate"
+
+
+    4.4. Install the EFS- Driver plugins and StorageClass
+    ------------------------------------------------------
+    helm upgrade --install aws-efs-csi-driver aws-efs-csi-driver/aws-efs-csi-driver --namespace kube-system -f values.yaml
+    
+   3.5 verify it now .
+   --------------------
+   kubectl get pods -n kube-system | grep efs
+
+   4.6 Verify Storage Class 
+  --------------------------
+  kubectl get storageclass
+
+
+5.0 Test it now with Pod deployment
+-----------------------------------
+5.1 create a file pod-with-pvc.yaml
+
+"apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: efs-dynamic-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-dynamic
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-efs
+spec:
+  containers:
+    - name: nginx
+      image: nginx:latest
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - name: efs-storage
+          mountPath: /usr/share/nginx/html
+
+  volumes:
+    - name: efs-storage
+      persistentVolumeClaim:
+        claimName: efs-dynamic-pvc" 
+
+5.2 Apply it 
+-------------
+kubectl apply -f pod-with-pvc.yaml
+
+5.6 verify it by 
+-----------------
+kubectl get pod 
+kubectl get pvc
+kubectl get sc
+
+  
+
