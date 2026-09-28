@@ -11,6 +11,8 @@ Installing ARGOCD SERVER
    3.1. kubectl get pod -n argocd
    3.2. kubectl get svc -n argocd
    3.3. kubectl get secret -n argocd
+   3.4 change the argocd-service from clusterip to nodeport using this command
+       kubectl patch svc argocd-server -n argocd  -p '{"spec":{"type":"NodePort"}}'
 
 4) kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
 
