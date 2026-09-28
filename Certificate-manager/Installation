@@ -1,0 +1,19 @@
+Using Helm we will install Certification Manager (cert-manager)
+
+1) Add the helm repo of cert-manager
+if you dont have helm first install it. 
+by 
+choco install kubernetes-helm
+
+2) Then open your git-bash or powershell to add helm repo
+----
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+
+kubectl create namespace cert-manager
+helm install cert-manager jetstack/cert-manager  --namespace cert-manager --set crds.enabled=true
+
+
+3) Verify installation
+kubectl get pods -n cert-manager
+kubectl get crd | grep cert-manager
