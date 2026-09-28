@@ -23,4 +23,12 @@ $env:KUBECONFIG = "$(Get-Location)/../a single cluster.yaml"
 or Git bash
 -----------
 export KUBECONFIG=../mysinglecluster.yaml 
- kubectl config get-contexts -o namey
+ kubectl config get-contexts -o name
+
+Add the cluster with thit context name 
+--------------------------------------
+example my own k8s cluster context name is SingleNodeCluster2
+
+argocd cluster add SingleNodeCluster2
+
+login to argocd ui and check the cluster you just added. 
