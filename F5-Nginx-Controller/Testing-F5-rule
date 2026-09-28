@@ -1,0 +1,74 @@
+TEsting NOw
+
+----------
+1) Deployment for our website 
+
+ ----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elearning-deployment
+  labels:
+    app: elearningnew
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: elearningnew
+
+  template:
+    metadata:
+      labels:
+        app: elearningnew
+
+    spec:
+      containers:
+      - name: elearning
+        image: smartcloud2022/elearning:v1
+        ports:
+        - containerPort: 80
+
+-------------------
+02-Service for the deployment 
+----
+apiVersion: v1  
+kind: Service
+metadata:
+  name: elearning-service
+  labels:
+    app: elearning
+spec:
+  type: ClusterIP
+  selector:
+    app: elearningnew
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+
+------------------------
+Ingress rule 
+--------
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: elearning-ingress
+  labels:
+    app: elearning
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: digitalwitch.online
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: elearning-service
+            port:
+              number: 80
+
+
