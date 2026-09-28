@@ -20,6 +20,6 @@ spec:
     spec:
       containers:
       - name: elearning
-        image: smartcloud2022/elearning:v1
+        image: smartcloud2022/car-service:v1
         ports:
         - containerPort: 80
