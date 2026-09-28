@@ -1,0 +1,21 @@
+INSTALLTING OF F5-NGINX-CONTROLLER
+
+1) Install Helm first on your computer and user helm to install F5-nginx controller
+
+choco install kubernetes-helm
+
+2) Export your kubernetes KUBECONFIG FILE SO YOU CAN HAVE ACCESS TO YOUR CLUSTER
+POWERSHELL = $env:KUBECONFIG = "$(Get-Location)/../singlecluster.yaml"
+GIT-BASH = export KUBECONFIG=../mysinglecluster.yaml
+
+3) Install the F5 Nginx Controller
+
+helm repo add nginx-stable https://helm.nginx.com/stable
+helm repo update
+
+kubectl create namespace nginx-ingress
+helm install nginx-ingress nginx-stable/nginx-ingress --namespace nginx-ingress --set controller.service.type=LoadBalancer
+
+4) Verify it 
+------------
+kubectl get svc -n nginx-ingress
