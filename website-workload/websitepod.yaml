@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elearning-deployment
+  labels:
+    app: elearningnew
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: elearningnew
+
+  template:
+    metadata:
+      labels:
+        app: elearningnew
+
+    spec:
+      containers:
+      - name: elearning
+        image: smartcloud2022/elearning:v1
+        ports:
+        - containerPort: 80
