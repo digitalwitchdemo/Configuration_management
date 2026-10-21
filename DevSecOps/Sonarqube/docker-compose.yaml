@@ -1,0 +1,82 @@
+services:
+  # Reverse proxy To SonarQube Server
+  #==================================
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:latest
+    container_name: nginx-proxy
+    labels:
+      com.github.nginx-proxy.nginx: "true"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/nginx/certs:/etc/nginx/certs:rw
+      - /etc/nginx/vhost.d:/etc/nginx/vhost.d
+      - /usr/share/nginx/html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    restart: unless-stopped
+
+  # Let's Encrypt companion for nginx-proxy To Generate Certificate
+  #================================================================
+  letsencrypt:
+    image: nginxproxy/acme-companion:latest
+    container_name: nginx-proxy-le
+    depends_on:
+      - nginx-proxy
+    volumes:
+      - /etc/nginx/certs:/etc/nginx/certs:rw
+      - /etc/nginx/vhost.d:/etc/nginx/vhost.d
+      - /usr/share/nginx/html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - acme:/etc/acme.sh
+    environment:
+      - NGINX_PROXY_CONTAINER=nginx-proxy
+      - DEFAULT_EMAIL=smartobi2022@gmail.com
+    restart: unless-stopped
+
+  # The main SonarQube Server
+  #==========================
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    depends_on:
+      - db
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+
+      # These tell nginx-proxy + acme-companion what to expose/sign
+      VIRTUAL_HOST: sonar.digitalwitch.online
+      VIRTUAL_PORT: "9000"
+      LETSENCRYPT_HOST: sonar.digitalwitch.online
+      LETSENCRYPT_EMAIL: smartobi2022@gmail.com
+    expose:
+      - "9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    restart: unless-stopped
+
+  # Postgres Database For SonarQube Making Data persistent
+  #=======================================================
+  db:
+    image: postgres:15
+    container_name: sonarqube_db
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonar
+    volumes:
+      - postgresql:/var/lib/postgresql
+      - postgresql_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  postgresql:
+  postgresql_data:
+  acme:
