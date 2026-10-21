@@ -47,9 +47,9 @@ services:
       SONAR_JDBC_PASSWORD: sonar
 
       # These tell nginx-proxy + acme-companion what to expose/sign
-      VIRTUAL_HOST: sonar.digitalwitch.online
+      VIRTUAL_HOST: sast.digitalwitch.online
       VIRTUAL_PORT: "9000"
-      LETSENCRYPT_HOST: sonar.digitalwitch.online
+      LETSENCRYPT_HOST: sast.digitalwitch.online
       LETSENCRYPT_EMAIL: smartobi2022@gmail.com
     expose:
       - "9000"
